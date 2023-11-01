@@ -39,7 +39,11 @@ func TestProcessServiceInstances(t *testing.T) {
 			},
 		},
 	}
-	for _, tg := range d.processServiceInstances(targetSource1, dio) {
+
+	targetGroups := d.processServiceInstances(targetSource1, dio)
+	assert.NotEqual(t, 0, len(targetGroups))
+
+	for _, tg := range targetGroups {
 		assert.Equal(t, "192.168.0.1:8080", string(tg.Targets[0][model.AddressLabel]))
 		assert.Equal(t, targetSource1.namespace, string(tg.Labels[lblNamespaceName]))
 		assert.Equal(t, targetSource1.service, string(tg.Labels[lblServiceName]))
@@ -49,9 +53,9 @@ func TestProcessServiceInstances(t *testing.T) {
 func TestProcessServiceInstances_WithEmptyList(t *testing.T) {
 	d := sampleDiscovery()
 	dio := &servicediscovery.DiscoverInstancesOutput{}
-	for _, tg := range d.processServiceInstances(targetSource1, dio) {
-		assert.Empty(t, tg.Targets)
-	}
+
+	targetGroups := d.processServiceInstances(targetSource1, dio)
+	assert.Equal(t, 0, len(targetGroups))
 }
 
 func TestCleanDeletedTargets_WithNoFailures(t *testing.T) {

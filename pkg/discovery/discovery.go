@@ -216,6 +216,7 @@ func (d *discovery) processServiceInstances(tgSourceSpec targetSourceSpec, dio *
 				},
 				Targets: make([]model.LabelSet, 0, len(dio.Instances)),
 			}
+			targetGroups[availabilityZone] = tg
 		}
 
 		instanceID := aws.StringValue(inst.InstanceId)
