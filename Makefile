@@ -1,5 +1,5 @@
 PKG=github.com/awslabs/aws-cloudmap-prometheus-sd
-GIT_COMMIT?=$(shell git rev-parse HEAD)
+GIT_COMMIT?=$(shell git rev-parse --short HEAD)
 BUILD_DATE?=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS?="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.buildDate=${BUILD_DATE} -s -w"
 GO111MODULE=on

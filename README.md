@@ -4,6 +4,12 @@ A custom service discovery adapter for Prometheus that integrates with [AWS Clou
 
 AWS Cloud Map is a cloud resource discovery service. With Cloud Map, you can define custom names for your application resources, and it maintains the updated location of these dynamically changing resources. This increases your application availability because your web service always discovers the most up-to-date locations of its resources.
 
+## Release
+
+```
+AWS_ACCOUNT=714918108619 AWS_REGION=us-west-2 make push-release IMAGE=aws-cloudmap-prometheus-sd
+```
+
 ## Usage
 
 1. Clone this repository
