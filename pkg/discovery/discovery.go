@@ -18,10 +18,9 @@ import (
 
 var (
 	lblCloudMapPrefix   = model.MetaLabelPrefix + "cloudmap_"
+	lblAvailabilityZone = model.LabelName(lblCloudMapPrefix + "availability_zone")
 	lblNamespaceName    = model.LabelName(lblCloudMapPrefix + "namespace_name")
 	lblServiceName      = model.LabelName(lblCloudMapPrefix + "service_name")
-	lblAvailabilityZone = model.LabelName(lblCloudMapPrefix + "availability_zone")
-	lblRegion           = model.LabelName(lblCloudMapPrefix + "region")
 )
 
 type targetSourceSpec struct {
@@ -163,8 +162,7 @@ func (d *discovery) processNamespace(ctx context.Context, cloudmap *servicedisco
 	if err := cloudmap.ListServicesPagesWithContext(ctx, lsi, func(lso *servicediscovery.ListServicesOutput, lastPage bool) bool {
 		for _, s := range lso.Services {
 			level.Info(d.logger).Log("msg", "Processing", "service", s.Name, "namespace", ns.Name)
-			tg := d.processService(ctx, cloudmap, ns, s)
-			if tg != nil {
+			for _, tg := range d.processService(ctx, cloudmap, ns, s) {
 				tgs = append(tgs, tg)
 			}
 			level.Info(d.logger).Log("msg", "Processed", "service", s.Name, "namespace", ns.Name)
@@ -179,7 +177,7 @@ func (d *discovery) processNamespace(ctx context.Context, cloudmap *servicedisco
 	return tgs
 }
 
-func (d *discovery) processService(ctx context.Context, cloudmap *servicediscovery.ServiceDiscovery, ns *servicediscovery.NamespaceSummary, s *servicediscovery.ServiceSummary) *targetgroup.Group {
+func (d *discovery) processService(ctx context.Context, cloudmap *servicediscovery.ServiceDiscovery, ns *servicediscovery.NamespaceSummary, s *servicediscovery.ServiceSummary) map[string]*targetgroup.Group {
 	tgSourceSpec := targetSourceSpec{
 		namespace: aws.StringValue(ns.Name),
 		service:   aws.StringValue(s.Name),
@@ -200,17 +198,26 @@ func (d *discovery) processService(ctx context.Context, cloudmap *servicediscove
 	return d.processServiceInstances(tgSourceSpec, dio)
 }
 
-func (d *discovery) processServiceInstances(tgSourceSpec targetSourceSpec, dio *servicediscovery.DiscoverInstancesOutput) *targetgroup.Group {
+func (d *discovery) processServiceInstances(tgSourceSpec targetSourceSpec, dio *servicediscovery.DiscoverInstancesOutput) map[string]*targetgroup.Group {
 	d.newSources[tgSourceSpec] = true
-	tg := &targetgroup.Group{
-		Source: tgSourceSpec.String(),
-		Labels: model.LabelSet{
-			lblNamespaceName: model.LabelValue(tgSourceSpec.namespace),
-			lblServiceName:   model.LabelValue(tgSourceSpec.service),
-		},
-		Targets: make([]model.LabelSet, 0, len(dio.Instances)),
-	}
+	targetGroups := make(map[string]*targetgroup.Group)
+
 	for _, inst := range dio.Instances {
+		availabilityZone := aws.StringValue(inst.Attributes["AVAILABILITY_ZONE"])
+
+		tg := targetGroups[availabilityZone]
+		if tg == nil {
+			tg = &targetgroup.Group{
+				Source: tgSourceSpec.String(),
+				Labels: model.LabelSet{
+					lblAvailabilityZone: model.LabelValue(availabilityZone),
+					lblNamespaceName:    model.LabelValue(tgSourceSpec.namespace),
+					lblServiceName:      model.LabelValue(tgSourceSpec.service),
+				},
+				Targets: make([]model.LabelSet, 0, len(dio.Instances)),
+			}
+		}
+
 		instanceID := aws.StringValue(inst.InstanceId)
 		ipv4 := aws.StringValue(inst.Attributes["AWS_INSTANCE_IPV4"])
 		ipv6 := aws.StringValue(inst.Attributes["AWS_INSTANCE_IPV6"])
@@ -229,11 +236,10 @@ func (d *discovery) processServiceInstances(tgSourceSpec targetSourceSpec, dio *
 			ipAddr = net.JoinHostPort(ipAddr, port)
 		}
 		labels := model.LabelSet{
-			model.AddressLabel:  model.LabelValue(ipAddr),
-			lblAvailabilityZone: model.LabelValue(aws.StringValue(inst.Attributes["AVAILABILITY_ZONE"])),
-			lblRegion:           model.LabelValue(aws.StringValue(inst.Attributes["REGION"])),
+			model.AddressLabel: model.LabelValue(ipAddr),
 		}
 		tg.Targets = append(tg.Targets, labels)
 	}
-	return tg
+
+	return targetGroups
 }

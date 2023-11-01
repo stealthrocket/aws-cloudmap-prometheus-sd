@@ -31,6 +31,7 @@ func TestProcessServiceInstances(t *testing.T) {
 				NamespaceName: aws.String(targetSource1.namespace),
 				ServiceName:   aws.String(targetSource1.service),
 				Attributes: map[string]*string{
+					"AVAILABILITY_ZONE": aws.String("us-west-2a"),
 					"AWS_INSTANCE_IPV4": aws.String("192.168.0.1"),
 					"AWS_INSTANCE_PORT": aws.String("8080"),
 					"version":           aws.String("v1"),
@@ -38,17 +39,19 @@ func TestProcessServiceInstances(t *testing.T) {
 			},
 		},
 	}
-	tg := d.processServiceInstances(targetSource1, dio)
-	assert.Equal(t, "192.168.0.1:8080", string(tg.Targets[0][model.AddressLabel]))
-	assert.Equal(t, targetSource1.namespace, string(tg.Labels[lblNamespaceName]))
-	assert.Equal(t, targetSource1.service, string(tg.Labels[lblServiceName]))
+	for _, tg := range d.processServiceInstances(targetSource1, dio) {
+		assert.Equal(t, "192.168.0.1:8080", string(tg.Targets[0][model.AddressLabel]))
+		assert.Equal(t, targetSource1.namespace, string(tg.Labels[lblNamespaceName]))
+		assert.Equal(t, targetSource1.service, string(tg.Labels[lblServiceName]))
+	}
 }
 
 func TestProcessServiceInstances_WithEmptyList(t *testing.T) {
 	d := sampleDiscovery()
 	dio := &servicediscovery.DiscoverInstancesOutput{}
-	tg := d.processServiceInstances(targetSource1, dio)
-	assert.Empty(t, tg.Targets)
+	for _, tg := range d.processServiceInstances(targetSource1, dio) {
+		assert.Empty(t, tg.Targets)
+	}
 }
 
 func TestCleanDeletedTargets_WithNoFailures(t *testing.T) {
