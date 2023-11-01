@@ -6,7 +6,7 @@ GO111MODULE=on
 # Docker
 IMAGE=awslabs/aws-cloudmap-prometheus-sd
 REPO=$(AWS_ACCOUNT).dkr.ecr.$(AWS_REGION).amazonaws.com/$(IMAGE)
-VERSION=v0.0.1
+VERSION=$(GIT_COMMIT)
 
 .PHONY: build
 build:
@@ -27,7 +27,7 @@ image-release:
 	docker build -t $(IMAGE):$(VERSION) .
 
 .PHONY: push
-push:
+push: image
 ifeq ($(AWS_ACCOUNT),)
 	$(error AWS_ACCOUNT is not set)
 endif
@@ -35,7 +35,7 @@ endif
 	docker push $(REPO):latest
 
 .PHONY: push-release
-push-release:
+push-release: image-release
 	docker tag $(IMAGE):$(VERSION) $(REPO):$(VERSION)
 	docker push $(REPO):$(VERSION)
 

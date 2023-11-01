@@ -1,4 +1,4 @@
-FROM golang:1.18-stretch as builder
+FROM golang:1.21.3 as builder
 WORKDIR /go/src/github.com/awslabs/aws-cloudmap-prometheus-sd
 
 # go.mod and go.sum go into their own layers.

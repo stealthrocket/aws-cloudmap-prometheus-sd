@@ -17,9 +17,11 @@ import (
 )
 
 var (
-	lblCloudMapPrefix = model.MetaLabelPrefix + "cloudmap_"
-	lblNamespaceName  = model.LabelName(lblCloudMapPrefix + "namespace_name")
-	lblServiceName    = model.LabelName(lblCloudMapPrefix + "service_name")
+	lblCloudMapPrefix   = model.MetaLabelPrefix + "cloudmap_"
+	lblNamespaceName    = model.LabelName(lblCloudMapPrefix + "namespace_name")
+	lblServiceName      = model.LabelName(lblCloudMapPrefix + "service_name")
+	lblAvailabilityZone = model.LabelName(lblCloudMapPrefix + "availability_zone")
+	lblRegion           = model.LabelName(lblCloudMapPrefix + "region")
 )
 
 type targetSourceSpec struct {
@@ -227,7 +229,9 @@ func (d *discovery) processServiceInstances(tgSourceSpec targetSourceSpec, dio *
 			ipAddr = net.JoinHostPort(ipAddr, port)
 		}
 		labels := model.LabelSet{
-			model.AddressLabel: model.LabelValue(ipAddr),
+			model.AddressLabel:  model.LabelValue(ipAddr),
+			lblAvailabilityZone: model.LabelValue(aws.StringValue(inst.Attributes["AVAILABILITY_ZONE"])),
+			lblRegion:           model.LabelValue(aws.StringValue(inst.Attributes["REGION"])),
 		}
 		tg.Targets = append(tg.Targets, labels)
 	}
