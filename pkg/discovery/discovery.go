@@ -189,9 +189,9 @@ func (d *discovery) processService(ctx context.Context, cloudmap *servicediscove
 	dio, err := cloudmap.DiscoverInstancesWithContext(ctx, discoveryInput)
 	if err != nil {
 		level.Error(d.logger).Log("msg", "Error calling DiscoverInstances",
-			"service", s.Name, "namespace", ns.Name)
+			"service", s.Name, "namespace", ns.Name, "error", err)
 
-		d.failedSources[tgSourceSpec] = true
+		// d.failedSources[tgSourceSpec] = true
 		return nil
 	}
 
